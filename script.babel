@@ -1,0 +1,188 @@
+const {
+	createStore,
+	bindActionCreators
+} = Redux;
+const {
+	Provider,
+	connect
+} = ReactRedux;
+const {
+	render
+} = ReactDOM;
+
+// Dummy data for app
+const attendeeList = [{
+	name: 'Muskan',
+	color: '#cb3737',
+	id: uuid.v4()
+}, {
+	name: 'Macbook',
+	color: '#9c297f',
+	id: uuid.v4()
+}, {
+	name: 'Apple',
+	color: '#3d0043',
+	id: uuid.v4()
+}, {
+	name: 'Canada',
+	color: '#36622b',
+	id: uuid.v4()
+}, ];
+
+/* --- COMPONENTS --- */
+class App extends React.Component {
+	render() {
+		return (
+			<div>
+				<h1>Attendees</h1>
+				<hr/>
+				<AddAttendee addAttendee={this.props.addAttendee} />
+				<hr/>
+				<Attendees attendees={this.props.attendees} removeAttendee={this.props.removeAttendee} />
+			</div>
+		)
+	}
+}
+
+class Attendees extends React.Component {
+
+	render() {
+		return (
+			<ul className="attendees">
+				{this.props.attendees.map((attendee, index) =>
+					<li className="attendees__attendee" key={index}>
+						<Badge attendee={attendee} />
+						<RemoveAttendee removeAttendee={this.props.removeAttendee} index={index} />
+					</li>
+				)}
+			</ul>
+		)
+	}
+}
+
+class AddAttendee extends React.Component {
+	handleSubmit(e) {
+		// Stop page refreshing
+		e.preventDefault();
+
+		let refs = this.refs;
+		let name = refs.name.value;
+		let color = refs.color.value
+
+		// Trigger action
+		this.props.addAttendee(name, color);
+
+		// Reset form
+		refs.addAttendee.reset();
+	}
+	render() {
+		return (
+			<div className="row">
+				<div className="medium-6 medium-offset-3 columns">
+					<form ref="addAttendee" onSubmit={this.handleSubmit.bind(this)}>
+						<label for="name">Name</label>
+						<input id="name" type="text" ref="name" placeholder="John Doe" />
+						<label for="color">Favourite color</label>
+						<input id="color" type="text" ref="color" placeholder="#2e2e2e" />
+						<button type="submit" className="button">Add attendee</button>
+					</form>
+				</div>
+			</div>
+		)
+	}
+}
+
+class RemoveAttendee extends React.Component {
+	handleOnClick() {
+		let index = this.props.index;
+
+		this.props.removeAttendee(index);
+	}
+	render() {
+		return (
+
+			<button className="alert button tiny" onClick={this.handleOnClick.bind(this)}> &times; Remove attendee</button>
+		)
+	}
+}
+
+class Badge extends React.Component {
+
+	render() {
+		var style = {backgroundColor: this.props.attendee.color};
+										 
+		return (			
+			<div className="hello-badge" style={style}>
+				<p className="hello-badge__title"><span className="hello-badge__hello">Hello</span><br /> my name is</p>
+				<p className="hello-badge__name">{this.props.attendee.name}</p>
+			</div>
+		)
+	}
+}
+
+/* --- ACTIONS --- */
+
+const actions = {
+	addAttendee: (name, color) => {
+		return {
+			type: 'ADD_ATTENDEE',
+			id: uuid.v4(),
+			name,
+			color
+		}
+	},
+	removeAttendee: (index) => {
+		return {
+			type: 'REMOVE_ATTENDEE',
+			index
+		}
+	}
+}
+
+/* --- REDUCERS --- */
+function reducer(state = [], action) {
+	switch (action.type) {
+		case 'ADD_ATTENDEE':
+			// Return a new array with old state and added attendee.
+			return [{
+					name: action.name,
+					color: action.color
+				},
+				...state
+			];
+		case 'REMOVE_ATTENDEE':
+			return [
+				// Grab state from begging to index of one to delete
+				...state.slice(0, action.index),
+				// Grab state from the one after one we want to delete
+				...state.slice(action.index + 1)
+			];
+		default:
+			return state;
+	}
+}
+
+/* --- STORE --- */
+
+const AppContainer = connect(
+	function mapStateToProps(state) {
+		return {
+			attendees: state
+		};
+	},
+	function mapDispatchToProps(dispatch) {
+		return bindActionCreators(actions, dispatch);
+	}
+)(App);
+
+const store = createStore(reducer, attendeeList);
+
+/* --- OTHER --- */
+
+// Render the app
+render(
+	<Provider store={store}>
+    <AppContainer />
+  </Provider>,
+	document.getElementById('app')
+);
